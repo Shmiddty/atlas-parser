@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-export default (function() {
+module.exports = (function() {
 function parse(atlasTxt) {
 	
 	var parentAttributes = ['format', 'filter', 'repeat'];
