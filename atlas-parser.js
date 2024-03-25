@@ -27,18 +27,23 @@
 module.exports = (function() {
 function parse(atlasTxt) {
 	
-	var parentAttributes = ['format', 'filter', 'repeat'];
+	var parentAttributes = ['size', 'format', 'filter', 'repeat'];
 	var childAttributes = ['rotate', 'xy', 'size', 'split', 'orig', 'offset', 'index'];
 
+  // This is a hack because I don't feel like fixing
+  // this strange parsing code that expects the first
+  // line to be blank
+  var str = '\n' + atlasTxt.trim(); 
+
 	//identify parent nodes
-	var str = atlasTxt.replace(/\n([^\:\n]+)\n([a-z0-9\\_]+)\:(.+)\n{0,1}/gm, function () {
+	str = str.replace(/\n([^\:\n]+)\n([a-z0-9\\_]+)\:(.+)\n{0,1}/gm, function () {
 		var ret = '###' + arguments[1] + '###:{\n';   //use ### to discriminate parent node
 		ret += arguments[2] + ':' + arguments[3] + '\n';                
 		return ret;
 	});
 
 	//identify children nodes
-	var str = str.replace(/\n([^\:#]+)\n/g, function () {
+	str = str.replace(/\n([^\:#]+)\n/g, function () {
 		var ret = '\n';
 		ret += '##' + arguments[1].replace(/[\n\s]+/g, '') + '## : {\n'; //use ## to discriminate child node
 		return ret;
