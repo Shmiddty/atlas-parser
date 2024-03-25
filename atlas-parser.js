@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-var AtlasParser = (function() {
+export default (function() {
 function parse(atlasTxt) {
 	
 	var parentAttributes = ['format', 'filter', 'repeat'];
