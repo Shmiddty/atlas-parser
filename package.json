@@ -1,0 +1,11 @@
+{
+  "name": "atlas-parser",
+  "version": "1.0.0",
+  "description": "atlas-parser ============ this is a javascript .atlas parser. it converts .atlas file to a json object for easy manipulation.",
+  "main": "atlas-parser.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alaa-eddine KADDOURI / Ezelia.com",
+  "license": "ISC"
+}

@@ -1,5 +1,7 @@
 atlas-parser
 ============
+(Now as a node module)
+
 this is a javascript .atlas parser.
 it converts .atlas file to a json object for easy manipulation.
 
