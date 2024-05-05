@@ -25,94 +25,58 @@
  */
 
 module.exports = (function() {
+
+function partition(arr, fn) {
+  let part = [];
+  const out = [part];
+  arr.forEach((itm, i) => {
+    part.push(itm);
+    if (fn(itm, arr[i+1])) {
+      part = [];
+      out.push(part);
+    }
+  });
+  return out;
+}
+
+// TODO: this could be better.
+function toProp([left, right]) {
+  var numMatch = right.match(/[0-9\-\.]+/g);
+  var boolMatch = right.match(/(true|false)+/gi);
+  var strMatch = right.match(/([a-z_\\\/])+/gi);
+
+  left = left.trim()
+	right = right.replace(/\s+/, ''); //clean spaces
+
+	if (strMatch && !boolMatch) {
+		return { [left]: right }
+	}
+
+	if (boolMatch || (numMatch && numMatch.length == 1)) {
+    // so icky, amiright?
+		return { [left]: eval(right) }
+	}
+
+	if (numMatch && numMatch.length > 1) {
+		return { [left]: right.split(',').map(Number) }
+	}
+	return { [left]: right }
+}
+
 function parse(atlasTxt) {
-	
-	var parentAttributes = ['size', 'format', 'filter', 'repeat'];
-	var childAttributes = ['rotate', 'xy', 'size', 'split', 'orig', 'offset', 'index'];
-
-  // This is a hack because I don't feel like fixing
-  // this strange parsing code that expects the first
-  // line to be blank
-  var str = '\n' + atlasTxt.trim(); 
-
-	//identify parent nodes
-	str = str.replace(/\n([^\:\n]+)\n([a-z0-9\\_]+)\:(.+)\n{0,1}/gm, function () {
-		var ret = '###' + arguments[1] + '###:{\n';   //use ### to discriminate parent node
-		ret += arguments[2] + ':' + arguments[3] + '\n';                
-		return ret;
-	});
-
-	//identify children nodes
-	str = str.replace(/\n([^\:#]+)\n/g, function () {
-		var ret = '\n';
-		ret += '##' + arguments[1].replace(/[\n\s]+/g, '') + '## : {\n'; //use ## to discriminate child node
-		return ret;
-	});
-	
-	//parse couples  
-	str = str.replace(/([a-z0-9\\_]+)\:(.+)\n{0,1}/g, function (match, left, right) {
-
-		var numMatch = right.match(/[0-9\-\.]+/g);
-		var boolMatch = right.match(/(true|false)+/gi);
-		var strMatch = right.match(/([a-z_\\\/])+/gi);
-
-		right = right.replace(/\s+/, ''); //clean spaces
-		
-		if (strMatch && !boolMatch) {
-			return '"' + left + '":"' + right + '",\n';
-		}
-
-		if (boolMatch || (numMatch && numMatch.length == 1)) {
-			return '"' + left + '":' + right + ',\n';
-		}
-
-		if (numMatch && numMatch.length > 1) {
-			return '"' + left + '": [' + right + '],\n';
-		}
-		return '"' + left + '":"' + right + '",\n';
-
-	});
-
-	//back to parent nodes
-	var first = true;
-	var str = str.replace(/(###[^\:]+###)/g, function () {
-
-		var ret = first ? '' : '}\n}\n},\n';
-		ret += '"' + arguments[1].replace(/#{3}/g, '') +'"';
-
-		first = false;
-		return ret;
-	});
-
-	//back to child nodes
-	var str = str.replace(/([^\:,]+):([^\:]+),\n+(##[^\:]+##)/gm, function () {                
-		var left = arguments[1].replace(/[\"\n\s]+/g, '');
-		var ret = arguments[0];
-
-
-		//are we switching from a parent node attributes to frames definition ?
-		if (parentAttributes.indexOf(left) > -1) {
-			ret = arguments[1] + ':' + arguments[2] + ',\n';
-			ret += '"frames" : {\n' + arguments[3];
-		}
-		else {
-			ret = arguments[1] + ':' + arguments[2] + '},\n';
-			ret += arguments[3];
-		}
-		return ret;
-	});
-
-	
-	str += '\n}\n}}';
-
-	str = str.replace(/,([\s\n\t\r])+}/g, "$1}");
-	str = str.replace(/"[\s\n\t\r]+(.+)/g, "\"$1");
-	str = str.replace(/#{2}/g, '"'); //fix children
-
-	str = "{" + str + "}"; //wrap JSON
-	
-	//return str;
-	return JSON.parse(str);
+  return atlasTxt.trim().split('\n\n').reduce((out, packStr) => {
+    const [img, ...lines] = packStr.split('\n').map(ln => ln.split(':'))
+    const [top, ...children] = partition(lines, (a, b) => b && a.length == 2 && b.length == 1)
+    
+    out[img[0]] = children.reduce((o, [[frame], ...props]) => {
+      o.frames[frame] = (o.frames[frame] || []).concat(
+        props.map(toProp).reduce((o, v) => Object.assign(o, v), {})
+      ).sort((a, b) => a.index - b.index);
+      return o;
+    }, top.map(toProp).reduce((o, v) => Object.assign(o, v), { frames: {} }));
+    
+    return out;
+  }, {});
 }
 return {
 	parse:parse
